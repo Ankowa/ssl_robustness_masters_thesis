@@ -1,0 +1,16 @@
+\begin{table}[h]
+    \centering
+    \small
+    \caption{\textbf{\EmbedAttack performs comparably to \DepthPGD.} The values in the cells are RMSE $\downarrow$ (\cref{eq:rmse}) on the held-out set of the NYU-Depth v2~\cite{nyudepth} dataset. The results show significant increase of RMSE across all models, with \DepthPGD outperforming \EmbedAttack.}
+    \resizebox{\textwidth}{!}{
+    \begin{tabular}{llccc}
+    \toprule
+    SSL Encoder & Clean & \EmbedAttack & \DepthPGD \\
+    \midrule
+    \DINOvtwo ViT-S/14 & 0.49 & 1.54 & 2.60 \\
+    \DINOvtwo ViT-B/14 & 0.46 & 1.29 & 2.74 \\
+    \DINOvone ViT-B/16 & 0.61 & 1.28 & 1.79 \\
+    \bottomrule
+    \end{tabular}}
+    \label{tab:depth}
+\end{table}

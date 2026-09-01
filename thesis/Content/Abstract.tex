@@ -1,0 +1,13 @@
+\chapter*{Abstract}
+\addcontentsline{toc}{chapter}{Abstract}
+\markboth{Abstract}{Abstract}
+
+Self-supervised (SSL) image encoders find broad applications across many domains. They output rich representations---high-dimensional continuous vectors---of the input images. These representations are useful for a plethora of downstream tasks,~\eg classification, image segmentation, or object detection. There, simple linear probing achieves remarkable performance, despite the SSL encoders never being trained directly to perform well on these tasks.
+
+Their success brought ubiquitous use-cases, from medical image analysis, to self-driving cars. With their presence in such critical areas, there come inevitable harms when these models fail. One of the (many) failure modes is so-called adversarial examples. These are images crafted by adding imperceptible perturbations to the original benign images, where the perturbations are optimized to cause misprediction, while staying as small as possible, to evade detection. 
+
+While adversarial images have been extensively studied for classifiers, which output per-class probabilities, the literature for SSL encoders lags behind. The main reason for that is the representations they output reside in highly abstract, high-dimensional space, and there is no clear optimization direction for the perturbations. In contrast, for classifiers, the goal is simple: flip the predicted class from the correct to an incorrect one. On top of that, the final use-case of each representation is unknown, further obfuscating the optimization objective.
+
+In this work, I propose \EmbedAttack, a downstream-task agnostic adversarial attack for SSL image encoders. With this method, I craft adversarial images that cause severe mispredictions downstream, regardless of the task and dataset. Across multiple datasets, \EmbedAttack shows a clear drop in performance,~\eg on CIFAR10 the accuracy drops from $94\%$ to $1\%$. Its performance is as good as that of downstream-specific attacks like \PGD for classification, or \SegPGD for semantic segmentation, despite the fact that \EmbedAttack does not exploit the knowledge of the downstream task other attacks optimize against.
+
+My work shows that 1) universal, dataset- and task-agnostic adversarial attacks against SSL encoders are possible; 2) the performance of \EmbedAttack is strong enough to cause significant prediction errors on real SSL encoders.

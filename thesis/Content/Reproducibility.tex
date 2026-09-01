@@ -1,0 +1,78 @@
+\chapter{Reproducibility}
+\label{chap:reproducibility}
+
+This thesis is amended with a codebase that allows full reproduction of all the results presented in~\cref{chap:results}. The codebase is publicly available at~\url{https://github.com/Ankowa/ssl_robustness_masters_thesis}. The codebase is written in Python, with pinned version 3.11.
+
+\section{Codebase Overview}
+
+The codebase is organized following standard practice, with the \texttt{src} directory serving as a core for all necessary functionality. The virtual environment is managed using \texttt{uv}\footnote{\url{https://docs.astral.sh/uv/}}, and the supported actions are configured using YAML files in the \texttt{conf} directory. Datasets and SSL encoders are to be downloaded from external sources, and the codebase provides necessary utilities for it.
+
+\subsection{Dependencies}
+
+This codebase heavily depends on external Python libraries. The following is a full list of dependencies, managed using \texttt{uv}.
+
+\begin{itemize}
+    \item \texttt{albumentations}\footnote{\url{https://albumentations.ai/}}: supports augmentations for segmentation and depth estimation, used during training downstream models. Required version: \textit{2.0.8}.
+    \item \texttt{black}\footnote{\url{https://pypi.org/project/black/}}: code formatter. Required version: \textit{26.5.}.
+    \item \texttt{datasets}\footnote{\url{https://huggingface.co/datasets}}: supports easy management of various datasets used in the thesis. Required version: \textit{5.0.1}.
+    \item \texttt{h5py}\footnote{\url{https://pypi.org/project/h5py/}}: data management library. Required version: \textit{3.16.0}.
+    \item \texttt{hydra-core}\footnote{\url{https://pypi.org/project/hydra-core/}}: supports experiments management and adds convenient configuration utilities. Required version: \textit{1.3.5}.
+    \item \texttt{matplotlib}\footnote{\url{https://matplotlib.org/}}: visualizaton library. Required version: \textit{3.11.1}.
+    \item \texttt{numpy}\footnote{\url{https://numpy.org/}}: adds support for fast vectorized operations on matrices. Required version: \textit{2.4.6}.
+    \item \texttt{omegaconf}\footnote{\url{https://omegaconf.readthedocs.io/en/2.3_branch/}}: configuration utilities. Required version: \textit{2.3.1}.
+    \item \texttt{pandas}\footnote{\url{https://pandas.pydata.org/}}: data analysis library. Required version: \textit{3.0.5}.
+    \item \texttt{timm}\footnote{\url{https://huggingface.co/timm}}: adds support for \DINOvone implementation. Required version: \textit{1.0.28}.
+    \item \texttt{torch}\footnote{\url{https://pytorch.org/}}: machine learning library providing support for training of neural networks, data processing, and automated gradient computation. Required version: \textit{2.13.0}.
+    \item \texttt{torchvision}\footnote{\url{https://docs.pytorch.org/vision/stable/index.html}}: adds vision-specific functionalities to the \texttt{torch} library. Required version: \textit{0.28.0}.
+\end{itemize}
+
+The environment can be set up by running \texttt{uv sync} in the Linux terminal.
+
+\subsection{\texttt{src} Directory}
+
+This directory is split into submodules, to better organize the code, and support possible extensions, as well as improving maintainability. The submodules are as follows:
+
+\begin{itemize}
+    \item \texttt{attack}: implements all methods of crafting adversarial examples evaluated in this work.
+    \item \texttt{data}: implements all datasets used in the thesis, supporting data pre-processing, data loading, augmentations and transformations.
+    \item \texttt{evaluation}: implements functionality necessary to evaluate performance of downstream models on clean and adversarial images across all downstream task types.
+    \item \texttt{models}: implements \DINOvone and \DINOvtwo SSL encoders; implements downstream models for each of the three downstream tasks; implements ViT backbones.
+    \item \texttt{train}: implements training loops for all three downstream tasks.
+\end{itemize}
+
+\subsection{Supported Experiments}
+
+The \texttt{conf} directory is split into three sub-directories:
+
+\begin{itemize}
+    \item \texttt{action}: configures downstream training and adversarial attacks. Options: \texttt{downstream\_training}, and \texttt{adversarial\_attack}.
+    \item \texttt{ssl\_model}: configures each of the SSL encoders used in the thesis. Options: \texttt{dino\_v1\_vitb16}, \texttt{dino\_v2\_vitb14\_distilled}, and \newline\texttt{dino\_v2\_vits14\_distilled}.
+    \item \texttt{task}: configures the three types of downstream tasks. Options: \newline\texttt{classification}, \texttt{depth\_estimation}, \texttt{segmentation}.
+\end{itemize}
+Experiments can be reproduced by running 
+\begin{verbatim}
+python3 -m src.main \
+    +action=[ACTION] \
+    +task=[TASK] \
+    +ssl_model=[MODEL]
+\end{verbatim}
+For example, training a classifier downstream model for \DINOvone ViT-B/16 is as simple as running 
+\begin{verbatim}
+python3 -m src.main \
+    +action=downstream_training \
+    +task=classification \
+    +ssl_model=dino_v1_vitb16
+\end{verbatim}
+
+\section{External Sources}
+
+Some of the codebase is based on external repositories. Specifically:
+
+\begin{itemize}
+    \item \textbf{\SegPGD} implementation is adapted from the official \SegPGD repository\footnote{\url{https://github.com/asif-hanif/segpgd/blob/main/segpgd.py}}.
+    \item \textbf{Data loading and augmentation} utilities are adapted from the DeACL~\cite{deacl} repository\footnote{\url{https://github.com/pantheon5100/DeACL/tree/dc0807e0b2b133fec3c9a3ec2dca6f3a2527cb5e}}.
+    \item \textbf{Depth estimation} loss function and downstream model implementation is based on \DINOvtwo repository\footnote{\url{https://github.com/facebookresearch/dinov2}}.
+    \item \textbf{ViT} implementation is adapted from \DINOvone repository\footnote{\url{https://github.com/facebookresearch/dino/tree/main}}.
+\end{itemize}
+
+Besides that, the codebase relies on external datasets, listed in~\cref{chap:exp_setup}, as well as pre-trained \DINOvone and \DINOvtwo SSL encoders, sourced from the official repositories\footnote{\url{https://github.com/facebookresearch/dino/tree/main}}\footnote{\url{https://github.com/facebookresearch/dinov2}}.

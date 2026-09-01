@@ -1,0 +1,53 @@
+% !TeX program = pdflatex
+% !TeX root = Thesis.tex
+
+\documentclass[english]{saartex}
+\input{Options.tex}
+\addbibresource{Literature.bib}
+
+\title{Benchmarking Robustness of Self-Supervised Learning Across Diverse Downstream Tasks}
+\author{Antoni Kowalczuk}
+\subject{Master Thesis}
+\place{Saarbrücken}
+\advisor{Dr. Adam Dziedzic}
+\professor{Prof. Dr. Andreas Zeller}
+\date{\today}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\newcommand{\EmbedAttack}{\textsl{EmbedAttack}\xspace}
+\newcommand{\PGD}{\textsl{PGD}\xspace}
+\newcommand{\SegPGD}{\textsl{SegPGD}\xspace}
+\newcommand{\DepthPGD}{\textsl{DepthPGD}\xspace}
+\newcommand{\DINOvone}{\textnormal{\textsc{DINOv1}}\xspace}
+\newcommand{\DINOvtwo}{\textnormal{\textsc{DINOv2}}\xspace}
+\newcommand{\eg}{\textit{e.g.,}\@\xspace}
+\newcommand{\ie}{\textit{i.e.,}\@\xspace}
+
+\begin{document}
+
+\hypersetup{plainpages=false,pageanchor=false}
+\maketitle
+\frontmatter
+\hypersetup{pageanchor=true}
+
+\include{Content/Abstract}
+\tableofcontents
+\ifgerman{\include{Content/Eidesstattliche_Erklaerung.tex}}
+\ifenglish{\include{Content/Sworn_Declaration}}
+
+\cleardoublepage
+\mainmatter
+
+\include{Content/Introduction}
+\include{Content/Background}
+\include{Content/Method}
+\include{Content/Experimental_Setup}
+\include{Content/Results}
+\include{Content/Reproducibility}
+\include{Content/Conclusion}
+
+\cleardoublepage
+\printbibliography[heading=bibintoc]
+
+\end{document}

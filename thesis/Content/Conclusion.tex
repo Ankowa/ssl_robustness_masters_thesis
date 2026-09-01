@@ -1,0 +1,18 @@
+\chapter{Conclusions}
+\label{chap:conclusions}
+
+This work shows a new angle on adversarial examples, a one that lacks exact predictive objective to evade. Despite lack of knowledge of the downstream task, the proposed \EmbedAttack creates adversarial examples that reliably cause misprediction in downstream linear models, regardless of their training data, or training objective. This posits \EmbedAttack as a universal and potent technique, tailored to SSL image encoders, which shows it is possible to reliably evade downstream models based on perturbing highly-dimensional and abstract representations output by the encoder network. While universal, \EmbedAttack performs slightly worse than task-specific and downstream-model-aware attacks like \DepthPGD, since it has no access or knowledge of what exact objective the adversarial example needs to evade. 
+
+\section{Limitations}
+
+This work was mainly conducted from early- to mid-2024, hence the results span ViT-based SSL encoders available at the time. It is thus not clear how the results achieved by \EmbedAttack translate to newer SSL frameworks. 
+
+The work is limited to image-only SSL encoders, while in recent years, joint text and image training gained more interest, with CLIP~\cite{clip} showing great gains in representation quality from incorporating data from both text and image modalities. While \EmbedAttack is directly applicable to the image encoding part of the CLIP model, it would require significant design changes to adapt it to attacking the text inputs, since these are discrete (contrary to image inputs).
+
+While this work was the first to evaluate robustness of SSL image encoders across downstream tasks beyond simple classification, some tasks were omitted from evaluation. For example, object detection, which requires specialized adapters on the ViT backbone, was not tested. Even though results of \EmbedAttack on pixel-level tasks are promising, it should be tested if they translate to tasks that necessitate more involved usage of the representations obtained from the encoder network.
+
+The work does not explore mitigations against \EmbedAttack, and does not propose a method to alleviate the risks posed by universal, task-agnostic adversarial examples. The workshop paper~\cite{embedatk} this thesis is based on provides initial evaluation of DeACL~\cite{deacl}, showing promising increase in robustness against \EmbedAttack, while offering no protection against task-specific attacks like \PGD.
+
+\section{Acknowledgements}
+
+I would like to thank the co-authors of the paper this thesis is based on~\cite{embedatk}, specifically the first co-authors: Jan Dubiński and Atiyeh Ashari Ghorni, other collaborators: Yi Sui, George Stein, Jaipeng Wu, and Jesse C. Cresswell, and my supervisors: Franziska Boenisch and Adam Dziedzic.

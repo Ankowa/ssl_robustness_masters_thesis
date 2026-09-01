@@ -1,0 +1,75 @@
+\chapter{Experimental Setup}\label{chap:exp_setup}
+
+A wise man once said ``theory can only get you so far''\footnote{I believe it was Oppenheimer.}, and thus here I outline the experimental setup for testing the performance of \EmbedAttack across three SSL encoders, three tasks, and seven datasets.
+
+\section{SSL Encoders}
+
+Since semantic segmentation and depth estimation require SSL encoders based on ViT (\cref{sec:eval_ssl}), I use \DINOvone and \DINOvtwo pre-trained encoders. These encoders have been trained by the authors of both papers~\cite{dinov1,dinov2}, and are accessible through the official repositories\footnote{https://github.com/facebookresearch/dino}\footnote{https://github.com/facebookresearch/dinov2}.
+
+\subsection{DINOv1}
+
+The backbone is ViT-B/16,~\ie the patch size $P$ is $16\times 16$ pixels, and per-patch representation $z$ has size $d=768$ dimensions. The number of parameters is 85M, and the model has been trained for 400 epochs on ImageNet-1k~\cite{imagenet} training set, with batch size of 1024~\cite{dinov1}. Regarding performance, a linear model trained on ImageNet-1k train set achieves $78.2\%$ accuracy on ImageNet-1k test set. The model processes images of shape $3\times224\times224$ pixels, which means that the number of patches each image is split into is $(224/16)^2=14^2=196$.
+
+\subsection{DINOv2}
+
+Here I evaluate two backbones: ViT-S/14, and ViT-B/16, each with patch size $P=14$ pixels. Each of the backbones has been trained for 625k training steps with batch size of 2048, using LVD-142M dataset~\cite{dinov2} of 142M images. Each backbone processes images of shape $3\times224\times224$ pixels, which means that the number of patches each image is split into is $(224/14)^2=16^2=256$.
+\paragraph{ViT-S/14} outputs embeddings of dimensionality $d=384$, and has 21M parameters. A linear model trained on ImageNet-1k train set achieves $80.8\%$ accuracy on ImageNet-1k test set.
+
+\paragraph{ViT-B/14} outputs embeddings of dimensionality $d=768$, and has 86M parameters. A linear model trained on ImageNet-1k train set achieves $84.6\%$ accuracy on ImageNet-1k test set.
+
+\section{Downstream Tasks}
+
+In the following I provide details of the downstream tasks used to evaluate \EmbedAttack against other baseline attacks, specifically: classification, semantic segmentation, and depth estimation. I summarize the datasets used for each task, as well as the hyperparameters used to train linear models $l_\mathbf{w}$ on the data.
+
+\subsection{Classification}\label{sec:eval_clf}
+
+Classification is a sample-level prediction task,~\ie only one value is output for a given input image, specifically a class $c$. Linear model $l_\mathbf{w}$ is parameterized by a matrix $\mathbf{w}$, and the input to the $l_\mathbf{w}$ is a representation of the image's $x$ token \texttt{[CLS]} from the encoder $f_\theta$. To train $l_\mathbf{w}$, cross-entropy loss~\cref{eq:celoss} is minimized over a dataset of $N_T$ samples $D_T$. As mentioned in~\cref{sec:eval_ssl,sec:pgd_baselines}, the performance is measured as accuracy on a held-out test set, and \textit{Attack Success Rate} (ASR) as accuracy on samples from the same held-out set, but after an attack (like \EmbedAttack) is applied on the image $x$.
+
+\paragraph{CIFAR10~\cite{cifar}} is a dataset of $N_T=50,000$ training and $10,000$ test images, with $K=10$ classes. Each image is of size $3\times 32\times 32$, which means it needs to be re-scaled to match the expected $3\times 224\times 224$ shape by the evaluated SSL encoders. Rescaling is achieved via linear interpolation.
+
+\paragraph{CIFAR100~\cite{cifar}} is another dataset with images of size $3\times 32\times 32$, but this time $K=100$ classes. There are still $N_T=50,000$ training images, and $10,000$ test images. Similarly to CIFAR10, images are rescaled using linear interpolation during training and attack.
+
+\paragraph{STL10~\cite{stl10}} is a small subset of ImageNet-1k~\cite{imagenet} dataset, spanning $K=10$ classes, with a total of $N_T=5,000$ training images, and $8,000$ test images. The images are of size $3\times 96\times 96$, and are upscaled using linear interpolation, akin to CIFAR10 and CIFAR100.
+
+\paragraph{Training hyperparameters} for all datasets are fixed to learning rate of $0.5$, batch size $16$, and $5$ training epochs using the Adam~\cite{adam} optimizer. Following training setup of DINOv1~\cite{dinov1} we apply random horizontal flips of images $x$ during training of the linear models. During evaluation no augmentations are applied.
+
+\subsection{Semantic Segmentation}
+
+Semantic segmentation is a pixel-level prediction task,~\ie the output is a mask $m$ containing per-pixel predictions, here a class $c$ for each pixel $(i,j)\in\{1,...,H\}\times\{1,...,W\}$. Akin to~\cref{sec:eval_clf}, the linear model $l_\mathbf{w}$ is parameterized by a matrix $\mathbf{w}$. Contrary to classification, the input to $l_\mathbf{w}$ is a 2D map of image $x$ patches' embeddings from the encoder $f_\theta$, and the output is a $(H/P)\times(W/P)$ map of per-patch probabilities over the classes $\{1,...,K\}$, which is then interpolated to match the original $H\times W$ size of the ground truth map $m$. Training minimizes SegCE loss (\cref{eq:seg_celoss}) over a downstream dataset $D_T$. The performance of the linear segmentation model is measured as mean Intersection over Union (mIoU,~\cref{eq:miou}) on held-out test data, and ASR as mIoU on samples from the same held-out set, but after an attack (like \SegPGD) is applied on the image $x$.
+
+\paragraph{Sliding window inference} is necessary, as some datasets,~\eg PASCAL VOC 2012~\cite{pascalvoc2012} contain images of varying sizes, and others have resolution significantly beyond the expected size of the encoders (like CityScapes~\cite{cityscapes}). To compute per-pixel logits, the image is split into (possibly overlapping) sub-images of size $224\times 224$, and passed through the encoder $f_\theta$ and $l_\mathbf{w}$ stack. The predictions (after linear interpolation brings them back to $224\times 224$ size) are then combined back to match the original size of the image $x$. In case of overlap between sub-images, the predictions for overlapping regions are averaged. This approach proven itself necessary to reproduce high performance on segmentation task reported in DINOv2 paper~\cite{dinov2}.
+
+\paragraph{ADE20k~\cite{ADE20k1,ADE20k2}} is a scene-parsing dataset with $N_T=20,210$ training images and the associated semantic masks. There are $K=150$ distinct classes in the dataset, and the images are of variable size, which necessitates sliding window inference. There are $3,000$ images in the test set.
+
+\paragraph{CityScapes~\cite{cityscapes}} is a dataset designed to evaluate visual understanding of urban street scenes, with $N_T=2,975$ training images and masks, and $K=20$ classes. Here the images are of very high resolution,~\ie $3\times 1024\times 2048$, which again requires sliding window inference. There are $1,525$ images in the test set.
+
+\paragraph{PASCAL VOC 2012~\cite{pascalvoc2012}} is a bit simpler dataset than the above, with smaller, yet variable-resolution images and $K=21$ classes. The training set consists of $1,464$ images, and test set of $1,456$ images. Sliding window inference is used.
+
+
+\paragraph{Training hyperparameters} for this task are: learning rate $0.0001$, batch size $16$, L2 regularization rate $0.001$, and the training lasts $50$ epochs using AdamW~\cite{adamw} optimizer, following setup from DINOv2~\cite{dinov2}. During training there are two data augmentations applied: random cropping, as well as random horizontal and vertical flips. During evaluation (clean and attacked) no augmentations are applied.
+
+\subsection{Depth Estimation}
+
+Depth estimation is another pixel-level prediction task, where the output is a mask $m$ containing per-pixel distance predictions $\in\mathbb{R}_+$ for each pixel. Training follows~\cref{sec:eval_ssl} (Depth Estimation). The predictive strength of the linear depth estimation model is measured as a Root Mean Squared Error (RMSE,~\cref{eq:rmse}) on held-out test data, and ASR as RMSE on samples from the same held-out set, but after an attack (like \DepthPGD) is applied on the image $x$.
+
+\paragraph{NYU-Depth v2~\cite{nyudepth}} consists of $N_T=795$ images with densely annotated depth masks, and $654$ test images. The depths range from $\text{dep}_\text{min}=0$ to $\text{dep}_\text{max}=10$, with bin width $b=10/256\approx0.04$.
+
+\paragraph{Training hyperparameters} follow DINOv2~\cite{dinov2} (\textit{lin. 1}) setup, with learning rate of $0.0001$, batch size $128$, L2 regularization parameter $\text{wd}=0.01$, and run training for $20$ epochs with AdamW optimizer. No training-time augmentations are applied.
+
+\section{Adversarial Attacks}
+
+In this section I set explicit parameters of the attacks that I use to craft adversarial examples. As the baselines, I use task- and dataset-specific attacks (\cref{sec:pgd_baselines}), and compare them to my \EmbedAttack. Each attack has a maximum perturbation strength $\epsilon=8/255$, step size $\eta=2/255$, and runs for $T=20$ steps, for fair comparison, following the setup from the original \PGD paper~\cite{pgd}.
+
+\subsection{Baselines}
+
+To compare \EmbedAttack, I run the following task-specific baseline attacks, introduced in~\cref{sec:pgd_baselines}. 
+
+\paragraph{Classification} is attacked using the standard \PGD~\cite{pgd} (see~\cref{alg:pgd}), with the optimization objective being CELoss (\cref{eq:celoss}). Optimization is performed on $f_V=(l_\mathbf{w}\circ f_\theta)$, where $l_\mathbf{w}$ is trained on the same dataset the attack is performed on,~\eg training on CIFAR10 train set, and evaluation on CIFAR10 test set.
+
+\paragraph{Semantic Segmentation} uses \SegPGD~\cite{segpgd} attack, using the same parameters, and SegCE (\cref{eq:seg_celoss}) objective. Similarly to \PGD for classification, the attack requires access to a trained linear segmentation model $l_\mathbf{w}$, and is applied on a matching dataset.
+
+\paragraph{Depth Estimation} applies a \PGD procedure (see~\cref{alg:pgd}) on the DepLoss (\cref{eq:deploss}) loss, referred to as \textit{DepthPGD}. \DepthPGD assumes access to the trained linear depth estimation layer.
+
+\subsection{\EmbedAttack}
+
+\EmbedAttack is executed on the representations obtained from the encoder $f_\theta$ given the input image $x$. Adversarial image $x_{adv}$ is obtained through~\cref{alg:embatk}. Attack success rate is evaluated by passing the representation of $x_{adv}$,~\ie $f_\theta(x_{adv})$ through a task-specific linear layer $l_\mathbf{w}$, and computing task-specific ASR metric (like accuracy). For example, evaluation of \EmbedAttack on CIFAR10 test set uses $l_\mathbf{w}$ trained on classification task with CIFAR10 training set.

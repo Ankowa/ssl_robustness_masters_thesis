@@ -1,0 +1,45 @@
+\chapter{Introduction}
+\label{chap:introduction}
+
+In this section I introduce the main object of my study: image encoders trained under self-supervised learning~\cite{ogssl} (SSL) paradigm. After providing an overview of what SSL is and why it was invented, I pivot to the second topic: adversarial images~\cite{advex}. Finally, I pair both topics, highlight the research gap my work addresses, and summarize the contributions of this thesis.
+
+\section{Computer Vision}
+
+The main objective of computer vision is to give sight to the computers. Our cameras already capture a lot of raw data, consisting of millions of 8bit numbers per image (also known as pixels). The computer should ``make sense'' of this data,~\ie understand the image's contents, semantics, structure, etc. The understanding should be at least partially similar to how we, humans, see and reason visually. 
+
+One of the ways to give an actual understanding came from an advent of machine learning (ML), where neural networks (NNs), optimized to minimize prediction error, achieved reasonable classification accuracy on ImageNet-1k~\cite{imagenet,alexnet}. These models use reasonably big sets of data points, consisting of images, labelled manually by human workers into classes.
+
+While their success is impressive, with current performance on ImageNet-1k benchmark surpassing human-eye-ball-based ``classifiers''~\cite{resnet_imagenet}, they rely heavily on manual labor for data collection, processing, filtering, and finally: labelling. ImageNet-1k, while truly ahead of its time, contains \textit{only} 1 million image+label pairs. The Internet offers orders-of-magnitude more data, albeit unlabeled, waiting to be harnessed.
+
+\section{Self-Supervised Learning and Image Encoders}
+
+One of the approaches to use this data productively, studied in this work, is self-supervised learning (SSL). There, the NNs are optimized towards a different objective than predicting the correct label, due to the lack of one. Instead, they output high-dimensional vectors, referred to as \textit{representations} or \textit{embeddings} throughout this thesis. These are meant to encode the rich contents of an image (usually consisting of millions of pixels) with a significantly sparser, continuous point in an embedding space. 
+
+These representations have many use-cases. One can train a simple logistic regression model, which predicts an image's class based on the SSL model's embeddings. Contrary to big and expensive to train NNs, this approach is cheap, and oftentimes beats NNs trained from scratch just to solve a specific task. Similarly, recent SSL encoders like \DINOvtwo~\cite{dinov2} enable per-pixel predictions like semantic segmentation or depth estimation. 
+
+Now it's the time to discuss how the SSL encoders are trained to produce these embeddings. Since random vectors are far from useful, these models have to somehow derive how to craft rich and expressive embeddings, using unlabeled data. The dominant approach here is to craft multiple ``views'' of an image,~\ie semantics-preserving augmentations like blurring or cropping. The NNs are trained to output identical representations for all views for the same image, and output different representations for views of two different images.
+
+Training frameworks of SSL encoders vary. SimCLR's~\cite{simclr} training objective jointly ``pulls in'' representations of views from the same image and ``pushes away'' representation of views from other images in each batch. SimSiam~\cite{simsiam} employs siamese networks~\cite{siamese} and stop-gradient operations to prevent collapse, while focusing only on matching views' embeddings from the same images. \DINOvone~\cite{dinov1} employs a self-distillation framework, where the teacher model is passed a ``strong'' view of an image, while the student sees a ``weak'', more noisy view of the same image. \DINOvone is also the first framework to successfully use Vision Transformers~\cite{vit} (ViTs) for SSL. Thanks to ViT's attention architecture~\cite{attention} it enables per-pixel predictions.
+
+\section{Adversarial Images}
+
+Since SSL encoders are so powerful, they find many applications,~\eg in self-driving cars, or medical image processing. These posit them as a crucial part in critical systems, and their failure can thus have severe negative consequences. 
+
+While there are many modes of failure an ML system can have, this work focuses on one: adversarial images (also referred to as adversarial examples throughout this work). Adversarial images are crafted explicitly to cause misprediction of a victim ML model. They start from a clean, benign image, which is subtly altered to,~\eg flip the class prediction from correct to incorrect. The perturbation added to the original image is oftentimes simply invisible for a human eye, while the NN is consistently fooled. This makes the detection, counteraction, and monitoring of such a threat extremely difficult. 
+
+White-box adversarial examples (the focus of this work) rely on gradient flow from the output of the NN back to the input image, requiring full access to the attacked model. Usually, they are created by crafting as small perturbation as possible~\cite{carliniandwagner} that achieves the goal of misprediction,~\eg misclassification, using simple gradient-based optimization like \PGD~\cite{pgd} or FGSM~\cite{fgsm}. Adversarial examples are uniformly present~\cite{adversarialarenotbugs}, almost every NN is vulnerable to them, and after more than a decade of research, the solution is far from known.
+
+\section{This work: SSL and Adversarial Examples}
+
+Adversarial images for classification are extensively studied~\cite{advex,fgsm,pgd,carliniandwagner,adversarialarenotbugs}, and less explored for SSL models. The reasons for that are as follows. 
+
+First, the optimization objective for adversarial images against SSL models is non-obvious. These predict vectors that reside in complex high-dimensional space, and it is not clear what goal should an adversarial image achieve there, and what to optimize for. In contrast, adversarial examples against classifiers have a clear goal: flip predicted label to an incorrect one.
+
+Second, the actual success of the attack is unknown, unless the adversary (attacker) explicitly knows what would this specific image's embedding be used for. This complicates the evaluation severely, as the attack success should be evaluated across a plethora of downstream tasks and datasets, especially since modern SSL models enable more than simple classification. 
+
+Finally, the attack should be \textit{downstream-task-agnostic}, meaning it should cause misclassification for any downstream linear probe. Current literature focuses only on \textit{task-specific} attacks~\cite{pgd,segpgd}, motivating work on a universal attack. My contributions are as follows.
+\begin{itemize}
+    \item I introduce \EmbedAttack, a \textit{downstream task- and dataset-agnostic} adversarial attack against SSL image encoders.
+    \item I evaluate \EmbedAttack against existing \textit{task- and dataset-specific} \PGD, \SegPGD, and \DepthPGD for classification, semantic segmentation, and depth estimation, respectively.
+    \item I show that \EmbedAttack is reliable and universal, across seven datasets, three tasks, and three SSL encoders, performing similarly to stronger, task-specific attacks.
+\end{itemize}

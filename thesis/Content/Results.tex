@@ -1,0 +1,61 @@
+\chapter{Results}
+\label{chap:results}
+
+In this section I summarize the results of adversarial attacks, comparing baselines with my \EmbedAttack across three downstream task types, three SSL models, and seven datasets. While the encoders perform very well on all downstream tasks when not attacked, both task-specific attacks and \EmbedAttack cause them to reliably \textit{mispredict}.
+
+\section{Classification}\label{sec:results_clf}
+
+The results for the classification task are visible in~\cref{tab:classification}. Notably, across all datasets, the linear classification heads achieve very high accuracies on the held-out sets, ranging from $0.76$ in the worst case (\DINOvone on CIFAR100) to almost perfect scores north of $0.98$ on STL10. Such high performance suggests that the evaluated SSL encoders have learned to encode the images into very rich representation vectors.
+
+Despite their high performance on unperturbed, clean images, all downstream classifiers are susceptible to adversarial attacks. Running \PGD causes each of the models to mispredict $100\%$ of the time, with the accuracy dropping to exactly $0.00$.
+
+\subsection{\EmbedAttack}
+
+While perfect ASR of \PGD is yet another confirmation that (almost) all models are vulnerable to adversarial examples, results for \EmbedAttack show that adversarial examples can be crafted without access to the downstream task model, and its training data. Pushing the representation $z'$ away from the representation of the original image is enough to fool the classifiers with \textit{similar success} as the \PGD attack. On CIFAR100 and CIFAR100 the ASR of \EmbedAttack is perfect ($0\%$ accuracy) and almost perfect ($1\%-4\%$ accuracy), respectively. 
+
+\input{Tables/classification.tex}
+
+\subsection{STL10}
+
+One notable exception is the STL10 dataset, where for the bigger \DINOvtwo model (ViT-B/14), the accuracy drops to only $20\%$ after \EmbedAttack, meaning that the attack succeeds only in $80\%$ of the cases, not $100\%$ like \PGD. 
+
+I hypothesize that the \DINOvtwo ViT-B/14 model is more robust for this dataset because the \textit{encoder itself} was trained on STL10, which is a subset of ImageNet-1k (see:~\cref{sec:eval_clf}), which in turn is a part of the LVD-142M dataset~\cite{dinov2}. Effectively, the SSL encoder was trained to output similar representation for multiple views of each image in the STL10. This indicates that the task of ``pushing away'' the representation from the original one could be significantly harder for \EmbedAttack, limiting its effectiveness.
+
+On the other hand, \PGD does not optimize for the \textit{distance} in the representation space, but for a misprediction after linear transformation of said representation by the linear classification head. Consequently, \PGD finds an adversarial image, which representation is closer to the original one than the \EmbedAttack's, but is more tailored to the task-specific classifier. Effectively, \PGD crafts \textit{better} adversarial examples than \EmbedAttack, which lacks access to the downstream head.
+
+\section{Semantic Segmentation}\label{sec:results_seg}
+
+The results for segmentation in~\cref{tab:segmentation} tell a similar story as the results for classification discussed in~\cref{sec:results_clf}. The downstream segmentation models achieve good performance on clean images, and catastrophically fail when the images are perturbed with either \EmbedAttack or \SegPGD.
+
+\input{Tables/segmentation.tex}
+
+\subsection{Clean performance}
+
+High clean performance is in line with the results reported for \DINOvtwo in its paper~\cite{dinov2}. It is worth noting here that the per-pixel labels are predicted based on the representations of the \textit{patches} of the images, not the \texttt{[CLS]} token representation (like for classification). These per-patch representations are \textit{never} a direct target of optimization during the training of the SSL encoders (\cref{sec:ssl_training}), and yet their representations, too, are rich enough that a simple linear classifier can perform well on the semantic segmentation task.
+
+\subsection{\EmbedAttack}
+
+Since the representations of patches are rich enough for good downstream task performance, adversarial representations crafted to be as far possible from the clean ones (with \EmbedAttack) cause severe drop in performance downstream. Notably, \EmbedAttack is \textbf{as successful as the task-specific} \SegPGD, which explicitly optimizes the image to cause as many (per-pixel) mispredictions as possible (\cref{eq:segpgd}).
+
+
+
+\section{Depth Estimation}\label{sec:results_dep}
+
+For depth estimation, the picture slightly changes.~\cref{tab:depth} shows notably higher attack strength of task-specific \DepthPGD, compared to \EmbedAttack. The clean performance stays on satisfactory levels, comparable to the numbers reported in the original \DINOvtwo paper~\cite{dinov2}.
+
+\input{Tables/depth.tex}
+
+\subsection{\EmbedAttack}
+
+Despite the difference between the ASR of \EmbedAttack and \DepthPGD, \EmbedAttack produces adversarial images capable of effectively destroying the performance of downstream depth estimator models. The lowest RMSE of $1.28$ under \EmbedAttack for \DINOvone is still $2\times$ higher than the worst reported RMSE ($0.641$) on the NYU-Depth v2~\cite{nyudepth} dataset in AdaBins~\cite{adabins} paper (from year 2020). Notably, the worst performance on that dataset in this work is reported for a method developed by Eigen \textit{et al.}~\cite{eigen2014depth} in 2014.
+
+The main cause for the discrepancy likely lies in the fact that \DepthPGD optimizes for a concrete objective: DepLoss (\cref{eq:deploss}), which, as one of its components, uses DepPix (\cref{eq:depth_pix}), which is almost exactly RMSE. Effectively, \DepthPGD can craft images that explicitly maximize the RMSE for the specific downstream depth estimator model, causing more severe mispredictions.
+
+While \DepthPGD increases the RMSE by $3$ to $5\times$ compared to the clean RMSE, the damage caused by \EmbedAttack is high enough to render the estimated per-pixel depth next to useless, with RMSE two times higher than of a method from 2014.
+
+
+\section{Discussion}\label{sec:results_discussion}
+
+The results presented for classification (\cref{sec:results_clf}), semantic segmentation (\cref{sec:results_seg}), and depth estimation (\cref{sec:results_dep}) remain consistent. While the SSL encoders succeed at encoding images into very semantically rich and informative representations, they remain vulnerable to adversarial examples. Despite incredible performance of the downstream models on all three tasks and seven different datasets, simple gradient-based optimization of the input can easily destroy their usefulness.
+
+Most notably, \EmbedAttack performs comparably to stronger, task-specific attacks across all tasks and datasets. While \PGD, \SegPGD, and \DepthPGD require access to the downstream models, and are explicitly designed for specific downstream tasks, \EmbedAttack creates adversarial examples that have as good ASR as the task-specific attacks. Effectively, \EmbedAttack posits itself as the first \textit{universal} and potent adversarial method for SSL image encoders. 

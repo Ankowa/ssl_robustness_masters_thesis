@@ -1,0 +1,32 @@
+% This file contains "basic" options.
+% For more advanced ones, you might have
+% to edit Thesis.cls
+
+% Base Font Size
+%   All other font sizes (for headings etc.) are adjusted accordingly
+
+\KOMAoptions{fontsize=12pt}
+\setcounter{tocdepth}{1}
+
+% Use the specific citation style
+%   The value after "style=" specifies the style
+%   common values include "numeric", "alphabetic", "authoryear"
+%   for a reference see http://mirrors.ctan.org/macros/latex/contrib/biblatex/doc/biblatex.pdf#subsection.3.3
+\usepackage[style=numeric,sorting=none]{biblatex}
+\usepackage{caption}
+
+% Thesis-specific table and math helpers. Keep this list small so that it
+% remains compatible with the SaarTex class and pdfLaTeX.
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{bm}
+\usepackage{xspace}
+\usepackage{todonotes}
+\usepackage{bbm}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+\usepackage{amsmath}
+\usepackage{wrapfig}
+
+\graphicspath{{Figures/}}
+\def\sign{{\text{sign}}}

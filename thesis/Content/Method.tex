@@ -1,0 +1,88 @@
+\chapter{\EmbedAttack}\label{chap:method}
+
+This chapter introduces the central contribution of this work: \EmbedAttack, a method that creates adversarial images against SSL image encoders. I start by explaining challenges facing crafting such images for SSL encoders. Then, I provide two, na\"{\i}ve solutions to these challenges, and explain why they might, and might not work well. Finally, I formulate \EmbedAttack, a \textit{task- and dataset-agnostic} adversarial attack against SSL vision encoders.
+
+\section{Adversarial Examples for SSL Encoders are Non-Trivial}\label{sec:advex_ssl_problems}
+
+There are two reasons for it. First: the optimization objective is unknown, and second: evaluation may be challenging.
+
+\subsection{Reason 1: Optimization Objective}
+
+\cref{sec:advex_bg} hints at the first problem of crafting adversarial examples for SSL encoders. Note that each method,~\ie FGSM (\cref{fig:fgsm}), \PGD (\cref{alg:pgd}), and \SegPGD (\cref{eq:segpgd}), requires an \textit{optimization objective} in order to guide the adversarial image $x_{adv}$ towards mis-prediction of the victim model $f_V$. For well-defined tasks like classification or segmentation, the objective is clear: cause the model $f_V$ to output a \textit{wrong} prediction, given that we \textit{know} what the \textit{correct} prediction is.
+
+Notably, for SSL encoders, as discussed in~\cref{sec:ssl_bg}, there is no such thing as a ``correct'' or ``wrong'' prediction, since the data is \textit{unlabeled}. Moreover, the prediction itself is meaningless without a broader context, since the representation $z$ is a very high-dimensional vector without any established interpretation. For benign use-cases the ``quality'' of $z$ is assessed using labeled data (\cref{sec:eval_ssl}), but a general ``usefulness'' metric is simply not available. Effectively, it is not clear what to put into the established \PGD (\cref{alg:pgd}) framework to craft adversarial examples for SSL models.
+
+\subsection{Reason 2: Evaluation}
+
+Lack of a concrete optimization objective extends to evaluation of the attack's effectiveness. Even if we assume that there is a \textit{sensible} optimization objective, and we can craft \textit{some} adversarial examples, how do we test if they actually cause misprediction? Intuitively, this can be achieved by tying the adversarial examples to specific \textit{downstream tasks}, following the evaluation setup in~\cref{sec:eval_ssl}. However, this requires training many task- and dataset-specific linear layers $l_\mathbf{w}$, one per (task $\times$ dataset) combination, to have an approximate idea of the strength of the attack. Moreover, adversarial examples have been shown to be task-dependent. Specifically, \SegPGD~\cite{segpgd} (introduced in~\cref{sec:advex_bg}) is built on an observation that the \PGD attack (originally developed for classification~\cite{pgd}) is not tailored to the specifics of the segmentation task. Concretely, when the optimization objective is adjusted to cause as many per-pixel mispredictions as possible, \SegPGD \textit{outperforms} \PGD (which optimizes the general model loss). Effectively, it is unclear how to assess the performance of the attack for the SSL encoders, unless we know which exact what downstream task we target.
+
+\section{Idea: Apply Existing Attacks}\label{sec:pgd_baselines}
+
+A simple idea that does not require any real methodological novelty is to fix the downstream task and dataset, train a linear layer $l_\mathbf{w}$ for this task, and then just apply task-specific \PGD version on the new victim model $f_V=l_\mathbf{w}\circ f$. In this section, I will explain why it may work, then establish task-specific baselines for the three tasks considered in this work, and finally explain why it may be not good enough.
+
+\subsection{Why this may Work}
+
+This idea degenerates the problem of adversarial examples for SSL encoders into a problem of adversarial examples for classifiers/semantic segmentation/depth estimation models. Specifically, the victim model $f_V=l_\mathbf{w}\circ f$ predicts class labels/per-pixel class labels/per-pixel distances, for which a ground truth is known. Effectively, one can simply use already existing machinery without any changes. 
+
+\paragraph{Baseline 1: \PGD for classification tasks} requires running the \PGD (\cref{alg:pgd}) with $\text{Obj}=\text{CELoss}$. Here, \textit{Attack Success Rate} (ASR) is defined as accuracy on adversarially perturbed images $x_{adv}$. Lower accuracy means higher attack strength.
+
+\paragraph{Baseline 2: \SegPGD for segmentation tasks} is \SegPGD (\cref{alg:pgd}) with $\text{Obj}=\text{SegPGD}$ (\cref{eq:segpgd}) on paired image $x$ and ground truth class mask $m$. Here, \textit{Attack Success Rate} (ASR) is defined as \textit{mean Intersection over Union} (mIoU) on $x_{adv}$. mIoU for dataset $D_T=\{(x_i,m_i)|i=1,...N_T\}$ with per-pixel classes $c$ is defined as:
+\begin{equation}
+    \text{mIoU}(D_T,f)=\frac{1}{NK}\sum_{(x,m)\sim D_T}\sum_{c=1}^{K}\frac{\#(\{(i,j)|m^{(i,j)}=c\}\cap\{(i,j)|f(x)^{(i,j)}=c\})}{\#(\{(i,j)|m^{(i,j)}=c\}\cup\{(i,j)|f(x)^{(i,j)}=c\})}\text{,}
+    \label{eq:miou}
+\end{equation}
+where $\#$ denotes size of a set. Lower mIoU means higher attack strength.
+
+\paragraph{Baseline 3: \DepthPGD for depth estimation tasks} uses the ensemble of two losses as the objective,~\ie $\text{Obj}=\text{DepLoss}$ (\cref{eq:deploss}) on paired image $x$ and ground truth depth mask $m$. Here, \textit{Attack Success Rate} (ASR) is defined as \textit{Root Mean Squared Error} (RMSE) on adversarial images $x_{adv}$. RMSE for $x$ and its depth mask $m\in\mathbb{R}_+^{H\times W}$ is defined as:
+\begin{equation}
+    \text{RMSE}(f,x,m)=\sqrt{
+        \frac{1}{HW}\sum_{i=1}^{H}\sum_{j=1}^{W}(f(x)^{(i,j)}-m^{(i,j)})^2
+    }\text{.}
+    \label{eq:rmse}
+\end{equation}
+Higher RMSE means higher attack strength.
+
+\subsection{Why this is not Good Enough}\label{sec:why_naive_advex_not_good_enough}
+
+While these attacks are \textit{almost} guaranteed to work for each of the three tasks, they all share one specific weakness. In order to execute them, we have to \textit{assume} access to the downstream linear model $l_\mathbf{w}$. This assumption is necessary, since to compute $\nabla_x\text{Obj}(f_V(x),y)|_{x=x_{adv}}$ the gradients have to flow \textit{through} each element of $f_V$,~\ie both $l_\mathbf{w}$ and $f_\theta$---the encoder network. Without access to $l_\mathbf{w}$ the optimization objective is not well-defined, and attack cannot be executed. Moreover, we have to assume that the image $x$ we attack is relevant to the task solved by $l_\mathbf{w}$. For example, attacking a classifier of cat breeds with an image of a dog does not make sense. The only feasible way to address these issues is to \textit{assume} that we: 1) know the underlying downstream dataset, and 2) have access to the trained downstream linear model $l_\mathbf{w}$. 
+
+\section{Proposed Solution: \EmbedAttack}
+
+Here I show how to design an attack that does not require any of the assumptions outlined in~\cref{sec:why_naive_advex_not_good_enough}. Without knowledge of the downstream task, data, and linear model, I focus on the representation space of the SSL encoder $f_\theta$, and design \EmbedAttack that operates there. 
+
+\subsection{Working in the Representation Space}\label{sec:embatk_intuition}
+
+Despite its complexity and general difficulty in understanding and interpretation, representation space in which each image's embedding $x$ reside likely has some internal structure. Indeed, has it been unstructured, simple linear layers would fail to perform well on more or less complex tasks like classification or semantic segmentation. Specifically, it is worth noting that the representations themselves are optimized to be \textit{close} together for \textit{similar} images, and \textit{far} away for \textit{dissimilar} images (see~\cref{sec:ssl_training}). Intuitively, if we ``push away'' the representation $z$ of original image $x$ far enough, we may end up with a representation $z'$ which resides in an area of the representation space occupied by representations of very \textit{dissimilar} images to $x$. Notably, we do not assume that we know the topology of the representation space,~\ie we do not know what regions are occupied by what kind of images. 
+
+\subsection{Optimization Procedure}
+
+Based on the intuition outlined in~\cref{sec:embatk_intuition}, the \EmbedAttack is defined in~\cref{alg:embatk}. Adversarial image $x_{adv}$ is crafted to maximize the L2 distance between the representation $z$ of the original image $x$, and $z'=f_\theta(x_{adv})$. This attack is used on sample-level prediction tasks,~\eg classification. 
+
+\begin{algorithm}
+\caption{\EmbedAttack algorithm.}
+\label{alg:embatk}
+\begin{algorithmic}
+    \Require $\epsilon$ (maximum perturbation strength), $\eta$ (step size), $T$ (total iterations)
+    \Require clip, $x$, $f_\theta$ (SSL encoder)
+    \Ensure $x_{adv}$, s.t. $\|x_{adv}-x\|_\infty\leq\epsilon$
+    \State $\delta\sim\mathcal{U}[-\epsilon, \epsilon]^{C\times H\times W}$ \Comment{Sample the initial perturbation}
+    \State $x_{adv}\gets x+\delta$ \Comment{Initialize $x_{adv}$}
+    \State $z\gets f_\theta(x)$ \Comment{Representation of original image $x$}
+    \For{step $t=1,...,T$}
+        \State $x_{adv}\gets x_{adv}+\eta\sign\left(
+            \nabla_x\left\|f_\theta\left(x\right)-z\right\|_2|_{x=x_{adv}}
+            \right)$ \Comment{L2 Norm}
+        \State $x_{adv}\gets x+\text{clip}(x_{adv}-x,-\epsilon,\epsilon)$ \Comment{Ensures $\left\|x_{adv}-x\right\|_\infty\leq\epsilon$}
+    \EndFor
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{\EmbedAttack on pixel-level predictions} requires a simple change to the object of optimization. Since for this task the input to any downstream task-specific linear model $l_\mathbf{w}$ is a 2D map of patch embeddings $\hat{m}_p$, the optimization objective is to maximize the L2 distance between the original map, and map obtained from $f_\theta(x_{adv})$.
+
+\subsection{Evaluation}
+
+To evaluate \EmbedAttack's success rate, there is unfortunately no other way than using downstream tasks and linear models trained on specific datasets. Neither the distance between original and adversarial representations, nor the representations themselves are interpretable, and thus, evaluation requires the same approach as assessing benign performance (\cref{sec:eval_ssl}), as well as the baseline task-specific attacks (\cref{sec:pgd_baselines}). However, the adversarial image being evaluated is crafted \textit{without} any knowledge of the downstream linear model $l_\mathbf{w}$, and \textit{without} any knowledge of the task-specific ASR metric (accuracy, mIoU, or RMSE, see~\cref{sec:pgd_baselines}).
+
+\subsection{On Universality of \EmbedAttack}
+
+\EmbedAttack is the first truly task- and data-agnostic adversarial example crafting algorithm, tailored specifically to SSL image encoders. The access assumptions are as minimal as possible for this setting,~\ie only the victim model $f$ with its parameters $\theta$, and the targeted image $x$. 

@@ -1,0 +1,22 @@
+\begin{table}[h]
+    \centering
+    \small
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{ll}
+        \toprule
+        Symbol(s) & Meaning \\
+        \midrule
+        $c\in\{1, 2,...,K\}$; $K$ & Class; Number of possible classes \\
+        $x\in\mathbb{R}^{C\times H\times W}$; $C$, $H$, $W$ & Image; Number of channels (usually 3), height, width. \\
+        $z\in\mathbb{R}^d$; $d$ & Representation; Dimensionality of representation. \\
+        $z^{(i)}$ & i-th element of the representation vector. \\
+        $f_\theta: \mathbb{R}^{C\times H\times W}\rightarrow\mathbb{R}^d$; $\theta\in\Theta$ & SSL encoder; Parameters of the SSL encoder. \\ 
+        $\mathcal{A}_i: \mathbb{R}^{C\times H\times W} \rightarrow \mathbb{R}^{C\times H\times W}$ & Image augmentation function (for example blurring). \\
+        $\mathbb{A}=\{\mathcal{A}_1,\mathcal{A}_2,...\}$ & Set of augmentations. \\
+        $D_T=\{(x_i,c_i)|i=1,...,N_T\}$; $N_T$ & A downstream training dataset; Number of samples. \\
+        $l_\mathbf{w}: \mathbb{R}^d \rightarrow \mathbb{R}^K$;  $\mathbf{w}\in \mathbb{R}^{d\times K}$ & Linear downstream classification head; Parameters of $l_\mathbf{w}$. \\
+        \bottomrule
+        \end{tabular}
+    }
+    \label{tab:notation}
+\end{table}

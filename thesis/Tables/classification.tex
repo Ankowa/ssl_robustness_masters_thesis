@@ -1,0 +1,25 @@
+\begin{table}[h]
+    \centering
+    \small
+    \caption{\textbf{\EmbedAttack performs on par with \PGD.} The values in the cells denote accuracy $\uparrow$ on the held-out sets of the respective datasets. While the \textit{Clean} accuracy is very high, after both \EmbedAttack and \PGD, it drops to zero almost everywhere.}
+    \resizebox{\textwidth}{!}{
+        \begin{tabular}{llccc}
+        \toprule
+        Dataset & SSL Encoder & Clean & \EmbedAttack & \PGD \\
+        \midrule
+        CIFAR10 & \DINOvtwo ViT-S/14 & 0.94 & 0.01 & 0.00 \\
+        CIFAR10 & \DINOvtwo ViT-B/14 & 0.98 & 0.04 & 0.00 \\
+        CIFAR10 & \DINOvone ViT-B/16 & 0.94 & 0.01 & 0.00 \\
+        \midrule
+        CIFAR100 & \DINOvtwo ViT-S/14 & 0.82 & 0.00 & 0.00 \\
+        CIFAR100 & \DINOvtwo ViT-B/14 & 0.86 & 0.00 & 0.00 \\
+        CIFAR100 & \DINOvone ViT-B/16 & 0.76 & 0.00 & 0.00 \\
+        \midrule
+        STL10 & \DINOvtwo ViT-S/14 & 0.98 & 0.06 & 0.00 \\
+        STL10 & \DINOvtwo ViT-B/14 & 0.99 & 0.20 & 0.00 \\
+        STL10 & \DINOvone ViT-B/16 & 0.98 & 0.00 & 0.00 \\
+        \bottomrule
+        \end{tabular}
+    }
+    \label{tab:classification}
+\end{table}
