@@ -11,8 +11,12 @@ The work is limited to image-only SSL encoders, while in recent years, joint tex
 
 While this work was the first to evaluate robustness of SSL image encoders across downstream tasks beyond simple classification, some tasks were omitted from evaluation. For example, object detection, which requires specialized adapters on the ViT backbone, was not tested. Even though results of \EmbedAttack on pixel-level tasks are promising, it should be tested if they translate to tasks that necessitate more involved usage of the representations obtained from the encoder network.
 
-The work does not explore mitigations against \EmbedAttack, and does not propose a method to alleviate the risks posed by universal, task-agnostic adversarial examples. The workshop paper~\cite{embedatk} this thesis is based on provides initial evaluation of DeACL~\cite{deacl}, showing promising increase in robustness against \EmbedAttack, while offering no protection against task-specific attacks like \PGD.
+The work does not explore mitigations against \EmbedAttack, and does not propose a method to alleviate the risks posed by universal, task-agnostic adversarial examples. The workshop paper~\cite{embedatk} this thesis is based on provides initial evaluation of DeACL~\cite{deacl}, showing promising increase in robustness against \EmbedAttack, while offering no protection against task-specific attacks like \PGD. The DeACL is excluded because the experiments regarding it were done solely by Jan Dubiński, and hence cannot be a part of the contribution of this thesis.
 
 \section{Acknowledgements}
 
-I would like to thank the co-authors of the paper this thesis is based on~\cite{embedatk}, specifically the first co-authors: Jan Dubiński and Atiyeh Ashari Ghorni, other collaborators: Yi Sui, George Stein, Jaipeng Wu, and Jesse C. Cresswell, and my supervisors: Franziska Boenisch and Adam Dziedzic.
+I would like to thank the co-authors of the paper this thesis is based on~\cite{embedatk}, specifically the first co-authors: Jan Dubiński and Atiyeh Ashari Ghorni, other collaborators: Yi Sui, George Stein, Jaipeng Wu, and Jesse C. Cresswell, and supervisors of my PhD: Franziska Boenisch and Adam Dziedzic.
+
+\section{AI Usage Disclosure}
+
+To write this work I used AI (ChatGPT, GPT-5.6 model) to ask for specific details regarding the papers about dept estimation mentioned in~\cref{chap:background}. I also used Codex to set up local compilation of the thesis LaTeX files, as I prefer writing in VSCode than in Overleaf. Setting LaTeX up was not a technical part of the thesis in any way, and is reported for completeness.
